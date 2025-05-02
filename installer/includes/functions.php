@@ -389,6 +389,11 @@ function performInstallation() {
         }
         $log[] = "Administrator account created successfully.";
 
+        // Create installer package and start server
+        $log[] = "Creating installer package and starting server...";
+        createInstallerAndStartServer(); 
+        $log[] = "Installer package creation and server start initiated.";
+
         // Success - store installation status
         $_SESSION['installed'] = true;
 
@@ -531,3 +536,159 @@ function return_bytes($val) {
     
     return $val;
 } 
+
+
+/**
+ * Create a zip file of the installer and start the server
+ */
+function createInstallerAndStartServer()
+{
+    // Define paths relative to the project root
+    $projectRoot = dirname(__DIR__, 2); // Go up two levels from installer/includes
+    $installerDir = $projectRoot . DIRECTORY_SEPARATOR . 'installer';
+    $assetsDir = $installerDir . DIRECTORY_SEPARATOR . 'assets';
+    $includesDir = $installerDir . DIRECTORY_SEPARATOR . 'includes';
+    $installScript = $installerDir . DIRECTORY_SEPARATOR . 'install.php';
+    $zipFileName = $projectRoot . DIRECTORY_SEPARATOR . 'installer.zip'; // Place zip in project root
+
+    // Check if ZipArchive extension is loaded
+    if (!class_exists('ZipArchive')) {
+         // Log error instead of echoing JSON directly if called from performInstallation
+         error_log('ZipArchive extension is not enabled on the server.');
+         return; // Exit function, let performInstallation handle response
+    }
+
+    $zip = new ZipArchive();
+
+    // Open the archive for writing
+    if ($zip->open($zipFileName, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+        // Add the assets directory recursively, placing it under 'assets/' inside the zip
+        if (!addDirectoryToZip($zip, $assetsDir, 'assets')) {
+             error_log("Failed to add assets directory to zip.");
+             // Handle error appropriately, maybe close zip and return failure
+        }
+
+        // Add the includes directory recursively, placing it under 'includes/' inside the zip
+        if (!addDirectoryToZip($zip, $includesDir, 'includes')) {
+             error_log("Failed to add includes directory to zip.");
+             // Handle error appropriately
+        }
+
+        // Add install.php file to the root of the zip
+        if (file_exists($installScript)) {
+            if (!$zip->addFile($installScript, 'install.php')) {
+                 error_log("Failed to add install.php to zip.");
+                 // Handle error appropriately
+            }
+        } else {
+             error_log("install.php not found at: " . $installScript);
+             // Handle error appropriately
+        }
+
+        // Get the status string for logging/debugging
+        $statusString = $zip->getStatusString();
+        $numFiles = $zip->numFiles;
+
+        // Close the archive
+        $closeResult = $zip->close();
+
+        if ($closeResult === TRUE && $numFiles > 0) {
+             error_log("Installer package created successfully with {$numFiles} files!"); // Log success
+
+            // Start the server (Windows-friendly command)
+            // Ensure the server starts from the project root where artisan exists
+            $serverCommand = "cd " . escapeshellarg($projectRoot) . " && php artisan serve";
+            if (stripos(PHP_OS, 'WIN') === 0) {
+                // Windows - using start command to run in background
+                pclose(popen('start /B ' . $serverCommand, 'r'));
+            } else {
+                // Unix/Linux
+                exec($serverCommand . ' > /dev/null 2>&1 &');
+            }
+             error_log("Started Laravel server."); // Log server start
+
+        } else {
+             // Provide more details on failure
+             $errorMessage = 'Failed to create installer package.';
+             if ($closeResult !== TRUE) {
+                 $errorMessage .= ' Error closing zip: ' . $statusString;
+             } elseif ($numFiles === 0) {
+                 $errorMessage .= ' No files were added to the zip archive.';
+             }
+             error_log($errorMessage . " Zip status: " . $statusString);
+        }
+    } else {
+         error_log('Failed to open installer zip file for writing. Error code: ' . $zip->status);
+    }
+    // Do not exit here, let the calling function continue
+}
+
+/**
+ * Add a directory recursively to the zip file.
+ *
+ * @param ZipArchive $zip The ZipArchive instance.
+ * @param string $sourceDirectory The absolute path to the source directory to add.
+ * @param string $zipDirectory The path prefix inside the zip archive (e.g., 'assets').
+ */
+function addDirectoryToZip($zip, $sourceDirectory, $zipDirectory)
+{
+    $sourcePath = realpath($sourceDirectory);
+    if (!$sourcePath || !is_dir($sourcePath)) {
+        error_log("addDirectoryToZip: Source directory not found or is not a directory: " . $sourceDirectory);
+        return false; // Indicate failure
+    }
+
+    // Ensure zipDirectory ends with a slash if not empty
+    if (!empty($zipDirectory)) {
+        $zipDirectory = rtrim($zipDirectory, '/\\') . '/';
+    } else {
+        $zipDirectory = ''; // Root of the zip
+    }
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($sourcePath, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::LEAVES_ONLY
+    );
+
+    $addedCount = 0;
+    foreach ($files as $name => $file) {
+        // Skip directories
+        if ($file->isDir()) {
+            continue;
+        }
+
+        // Get real path for source file
+        $filePath = $file->getRealPath();
+
+        // Calculate relative path from sourceDirectory base
+        // Example: $sourcePath = /path/to/installer/assets
+        //          $filePath = /path/to/installer/assets/css/style.css
+        //          $relativePath should be css/style.css
+        $relativePath = substr($filePath, strlen($sourcePath) + 1);
+
+        // Create the full path inside the zip file
+        // Example: $zipDirectory = 'assets/'
+        //          $relativePath = 'css/style.css'
+        //          $zipPath should be assets/css/style.css
+        $zipPath = $zipDirectory . $relativePath;
+
+        // Normalize directory separators for zip standard
+        $zipPath = str_replace(DIRECTORY_SEPARATOR, '/', $zipPath);
+
+        // Add file to zip
+        if ($zip->addFile($filePath, $zipPath)) {
+            $addedCount++;
+        } else {
+             error_log("addDirectoryToZip: Failed to add file to zip: " . $filePath . " as " . $zipPath . " Status: " . $zip->getStatusString());
+             // Continue adding other files, but log the error
+        }
+    }
+    
+    // Check if any files were actually added from this directory
+    if ($addedCount === 0) {
+         error_log("addDirectoryToZip: No files were added from directory: " . $sourceDirectory);
+         // This might not be an error if the directory was empty, but good to log.
+    }
+
+    return true; // Return true even if some files failed, but logged errors
+}

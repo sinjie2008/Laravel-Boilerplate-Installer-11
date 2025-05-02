@@ -35,10 +35,6 @@ if (isset($_SESSION['installed']) && $_SESSION['installed']) {
     <a href="<?php echo $homeUrl ?? './'; ?>" class="btn btn-primary btn-action">
         <i class="fas fa-home mr-2"></i> Go to Homepage
     </a>
-    
-    <button id="create-installer-btn" class="btn btn-success btn-action ms-2">
-        <i class="fas fa-download mr-2"></i> Complete Installation
-    </button>
 </div>
 
 <div id="installer-result" class="mt-4 d-none">
@@ -50,4 +46,4 @@ if (isset($_SESSION['installed']) && $_SESSION['installed']) {
             </a>
         </div>
     </div>
-</div> 
+</div>
