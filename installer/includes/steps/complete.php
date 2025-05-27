@@ -21,14 +21,15 @@ if (isset($_SESSION['installed']) && $_SESSION['installed']) {
     $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/');
     $baseUrl = $protocol . '://' . $host . $uri;
     $homeUrl = str_replace('/install.php', '', $baseUrl);
-    
-    // Auto redirect after 5 seconds
-    echo '<meta http-equiv="refresh" content="5;url=' . $homeUrl . '">';
     echo '<div class="alert alert-info mb-4">';
     echo '<i class="fas fa-spinner fa-spin mr-2"></i>';
     echo 'You will be redirected to the homepage in 5 seconds...';
     echo '</div>';
+    
 }
+
+
+
 ?>
 
 <div class="text-center mt-4">

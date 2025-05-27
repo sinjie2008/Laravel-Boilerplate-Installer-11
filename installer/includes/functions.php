@@ -692,3 +692,13 @@ function addDirectoryToZip($zip, $sourceDirectory, $zipDirectory)
 
     return true; // Return true even if some files failed, but logged errors
 }
+
+/**
+ * Start Laravel server and redirect to a specified URL
+ */
+function startLaravelServerAndRedirect(){
+       // Change to the Laravel project directory
+        header('Location: http://127.0.0.1:8000');
+        exit;
+}
+

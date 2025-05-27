@@ -7,6 +7,8 @@
 
 session_start();
 
+require_once 'includes/functions.php';
+
 // Check if PHP version is sufficient
 if (version_compare(PHP_VERSION, '8.1.0', '<')) {
     die('PHP version 8.1.0 or higher is required to run this installer.');
@@ -26,8 +28,7 @@ define('STEPS', [
 
 // Process AJAX requests
 if (isset($_POST['action'])) {
-    require_once 'includes/functions.php';
-    
+   
     $action = $_POST['action'];
     switch ($action) {
         case 'check_requirements':
@@ -62,6 +63,19 @@ if ($step < 1 || $step > count(STEPS)) {
 
 // Store step in session
 $_SESSION['current_step'] = $step;
+
+// If installation was successful and we are on the complete step, redirect
+if ($step === 7 && isset($_SESSION['installed']) && $_SESSION['installed']) {
+    // Get current URL
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/');
+    $baseUrl = $protocol . '://' . $host . $uri;
+    $homeUrl = str_replace('/install.php', '', $baseUrl);
+    
+    // Call the function to start Laravel server and redirect
+    startLaravelServerAndRedirect();
+}
 
 // Load the UI
 require_once 'includes/header.php';
