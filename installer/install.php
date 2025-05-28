@@ -7,77 +7,33 @@
 
 session_start();
 
-require_once 'includes/functions.php';
-
 // Check if PHP version is sufficient
 if (version_compare(PHP_VERSION, '8.1.0', '<')) {
     die('PHP version 8.1.0 or higher is required to run this installer.');
 }
 
 // Define constants
-define('INSTALLER_PATH', __DIR__);
-define('STEPS', [
-    1 => ['name' => 'Welcome', 'file' => 'welcome'],
-    2 => ['name' => 'Requirements', 'file' => 'requirements'],
-    3 => ['name' => 'Permissions', 'file' => 'permissions'],
-    4 => ['name' => 'Database', 'file' => 'database'],
-    5 => ['name' => 'Admin', 'file' => 'admin'],
-    6 => ['name' => 'Installation', 'file' => 'installation'],
-    7 => ['name' => 'Complete', 'file' => 'complete']
-]);
+if (!defined('INSTALLER_PATH')) {
+    define('INSTALLER_PATH', __DIR__);
+}
 
-// Process AJAX requests
-if (isset($_POST['action'])) {
-   
-    $action = $_POST['action'];
-    switch ($action) {
-        case 'check_requirements':
-            echo json_encode(checkRequirements());
-            break;
-        case 'check_permissions':
-            echo json_encode(checkPermissions());
-            break;
-        case 'validate_database':
-            echo json_encode(validateDatabase($_POST));
-            break;
-        case 'validate_admin':
-            echo json_encode(validateAdmin($_POST));
-            break;
-        case 'install':
-            echo json_encode(performInstallation());
-            break;
-        case 'run_diagnostics':
-            echo json_encode(runDiagnostics());
-            break;
-        default:
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+// Autoloader for Installer classes
+spl_autoload_register(function ($class) {
+    $prefix = 'Installer\\';
+    $base_dir = dirname(INSTALLER_PATH) . '/src/Installer/';
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return;
     }
-    exit;
-}
+    $relative_class = substr($class, $len);
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+    if (file_exists($file)) {
+        require $file;
+    }
+});
 
-// Set current step
-$step = isset($_GET['step']) ? (int)$_GET['step'] : 1;
-if ($step < 1 || $step > count(STEPS)) {
-    $step = 1;
-}
+$controller = new Installer\Controller();
+$controller->handleRequest();
 
-// Store step in session
-$_SESSION['current_step'] = $step;
-
-// If installation was successful and we are on the complete step, redirect
-if ($step === 7 && isset($_SESSION['installed']) && $_SESSION['installed']) {
-    // Get current URL
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'];
-    $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/');
-    $baseUrl = $protocol . '://' . $host . $uri;
-    $homeUrl = str_replace('/install.php', '', $baseUrl);
-    
-    // Call the function to start Laravel server and redirect
-    startLaravelServerAndRedirect();
-}
-
-// Load the UI
-require_once 'includes/header.php';
-require_once 'includes/steps/' . STEPS[$step]['file'] . '.php';
-require_once 'includes/footer.php';
+// The rest of the file is now handled by $controller->handleRequest()
+// which will include header, step file, and footer as needed.

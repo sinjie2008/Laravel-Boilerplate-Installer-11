@@ -21,7 +21,9 @@
                     <div class="card-body">
                         <div class="progress mb-4">
                             <?php
-                            $stepPercentage = (($step - 1) / (count(STEPS) - 1)) * 100;
+                            $currentStep = $this->getCurrentStep();
+                            $totalSteps = count(Installer\Config::STEPS);
+                            $stepPercentage = (($currentStep - 1) / ($totalSteps > 1 ? $totalSteps -1 : 1)) * 100;
                             ?>
                             <div class="progress-bar bg-success" role="progressbar" style="width: <?php echo $stepPercentage; ?>%" 
                                 aria-valuenow="<?php echo $stepPercentage; ?>" aria-valuemin="0" aria-valuemax="100">
@@ -30,13 +32,13 @@
                         </div>
                         
                         <ul class="nav nav-pills nav-fill mb-4">
-                            <?php foreach (STEPS as $index => $stepData): ?>
+                            <?php foreach (Installer\Config::STEPS as $index => $stepData): ?>
                                 <li class="nav-item">
                                     <?php 
                                     $class = '';
-                                    if ($index < $step) {
+                                    if ($index < $currentStep) {
                                         $class = 'bg-success text-white';
-                                    } elseif ($index == $step) {
+                                    } elseif ($index == $currentStep) {
                                         $class = 'bg-primary text-white';
                                     } else {
                                         $class = 'bg-light';
@@ -58,4 +60,4 @@
         </div>
     </div>
 </body>
-</html> 
+</html>
