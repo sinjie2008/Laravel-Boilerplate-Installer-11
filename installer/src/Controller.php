@@ -9,6 +9,7 @@ use Installer\Validator\AdminValidator;
 use Installer\Service\InstallService;
 use Installer\Service\DiagnosticService;
 use Installer\Service\ArchiveService;
+use Installer\Util;
 
 class Controller
 {
@@ -128,9 +129,12 @@ class Controller
         // unset($_SESSION['database']); // Already used
         // unset($_SESSION['admin']); // Already used
         
-        // Start Laravel's built-in server if not already running (conceptual)
-        // This part is tricky from a web script. The `performInstallation` already tries this.
-        // For simplicity, we assume it's running or user will run it.
+        // Remove the temporary installation folder
+        $tempInstallationPath = INSTALLER_PATH . '/temp_installation';
+        if (file_exists($tempInstallationPath)) {
+            $util = new Util();
+            $util->rrmdir($tempInstallationPath);
+        }
 
         // Redirect to Laravel application
         $homeUrl = 'http://127.0.0.1:8000'; // Default Laravel serve URL
