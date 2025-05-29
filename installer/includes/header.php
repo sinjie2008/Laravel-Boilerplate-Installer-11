@@ -51,13 +51,4 @@
                             <?php endforeach; ?>
                         </ul>
                         
-                        <div id="step-content">
-                            <!-- Step content will be loaded here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+                        <!-- The step content will be included directly here by Controller::renderPage() -->
