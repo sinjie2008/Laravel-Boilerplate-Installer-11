@@ -12,9 +12,10 @@ class ArchiveService
     public function createInstallerPackage(): void
     {
         $projectRoot = Config::getProjectRoot();
-        $installerDir = $projectRoot . DIRECTORY_SEPARATOR . 'installer'; // Assuming 'installer' is the name of your installer directory
+        $installerDir = $projectRoot . DIRECTORY_SEPARATOR . Config::INSTALLER_DIR_NAME;
         $assetsDir = $installerDir . DIRECTORY_SEPARATOR . 'assets';
-        $includesDir = $installerDir . DIRECTORY_SEPARATOR . 'includes';
+        $srcDir = $installerDir . DIRECTORY_SEPARATOR . 'src';
+        $viewsDir = $installerDir . DIRECTORY_SEPARATOR . 'views';
         $installScript = $installerDir . DIRECTORY_SEPARATOR . 'install.php';
         $zipFileName = $projectRoot . DIRECTORY_SEPARATOR . 'installer.zip';
 
@@ -28,13 +29,12 @@ class ArchiveService
         if ($zip->open($zipFileName, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
             if (is_dir($assetsDir)) {
                 $this->addDirectoryToZip($zip, $assetsDir, 'installer/assets');
-            } else {
-                 error_log("Assets directory not found: " . $assetsDir);
             }
-            if (is_dir($includesDir)) {
-                $this->addDirectoryToZip($zip, $includesDir, 'installer/includes');
-            } else {
-                 error_log("Includes directory not found: " . $includesDir);
+            if (is_dir($srcDir)) {
+                $this->addDirectoryToZip($zip, $srcDir, 'installer/src');
+            }
+            if (is_dir($viewsDir)) {
+                $this->addDirectoryToZip($zip, $viewsDir, 'installer/views');
             }
 
             if (file_exists($installScript)) {
@@ -56,8 +56,8 @@ class ArchiveService
                 if ($closeResult !== TRUE) {
                     $errorMessage .= ' Error closing zip: ' . $statusString;
                 } elseif ($numFiles === 0) {
-                    $errorMessage .= ' No files were added to the zip archive. Ensure paths are correct.';
-                    error_log("Checked paths: assetsDir={$assetsDir}, includesDir={$includesDir}, installScript={$installScript}");
+                    $errorMessage .= ' No files were added to the zip archive. Ensure paths are correct (assets, src, views, install.php).';
+                    error_log("Checked paths: assetsDir={$assetsDir}, srcDir={$srcDir}, viewsDir={$viewsDir}, installScript={$installScript}");
                 }
                 error_log($errorMessage . " Zip status: " . $statusString);
             }

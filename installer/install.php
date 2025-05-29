@@ -20,7 +20,7 @@ if (!defined('INSTALLER_PATH')) {
 // Autoloader for Installer classes
 spl_autoload_register(function ($class) {
     $prefix = 'Installer\\';
-    $base_dir = dirname(INSTALLER_PATH) . '/src/Installer/';
+    $base_dir = INSTALLER_PATH . '/src/';
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {
         return;

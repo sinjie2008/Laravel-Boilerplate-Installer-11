@@ -104,7 +104,7 @@ class Controller
 
     private function loadView(string $viewName): void
     {
-        $viewFile = INSTALLER_PATH . '/includes/' . $viewName . '.php';
+        $viewFile = INSTALLER_PATH . '/views/partials/' . $viewName . '.php';
         if (file_exists($viewFile)) {
             include $viewFile;
         } else {
@@ -114,7 +114,7 @@ class Controller
 
     private function loadStepView(string $stepFileName): void
     {
-        $viewFile = INSTALLER_PATH . '/includes/steps/' . $stepFileName . '.php';
+        $viewFile = INSTALLER_PATH . '/views/steps/' . $stepFileName . '.php';
         if (file_exists($viewFile)) {
             include $viewFile;
         } else {
